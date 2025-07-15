@@ -1,0 +1,104 @@
+\ProvidesPackage{bridge}[2022/11/18 Bridge notation]
+% This LaTeX file provides a comprehensive package for bridge notation,
+% designed to facilitate the creation of bridge-related documents.
+
+\RequirePackage{import}
+\subimport{}{common.sty}
+\subimport{}{envs.sty}
+\subimport{}{hands.sty}
+\subimport{}{sections.sty}
+\subimport{}{sequence.sty}
+
+\newcommand{\ntx}{{\small{NT}}}
+\newcommand{\ntch}{{\Large{NT}}}
+\newcommand{\hcp}{\textsc{hcp}\xspace}
+\newcommand{\bal}{\textsc{bal}\xspace}
+\newcommand{\nat}{\textsc{nat}\xspace}
+\newcommand{\unbal}{\st{\textsc{bal}}\xspace}
+\newcommand{\gf}{{\color{BrickRed}\textbf{GF}}\xspace}
+\newcommand{\nf}{{\color{Green}\textbf{NF}}\xspace}
+\newcommand{\forc}{{\color{RedViolet}\textbf{F}}\xspace}
+\newcommand{\fonce}{{\color{RedViolet}\textbf{F1}}\hspace{4pt}\xspace}
+\newcommand{\fton}[1]{{\color{RedViolet}\textbf{F}}\xspace to {#1}}
+\newcommand{\trsf}[1]{\textsc{trsf}\xspace to {#1}}
+\newcommand{\inv}{{\color{PineGreen}\textbf{INV}}\xspace}
+\newcommand{\invp}{{\color{Blue}\textbf{INV$^+$}}\xspace}
+\newcommand{\slamtry}{{\color{WildStrawberry}\textbf{Slam Try}}\hspace{4pt}}
+\newcommand{\minor}{{\color{OliveGreen}\ding{168}\hspace{-3pt}\color{BurntOrange}\ding{169}}\xspace}
+\newcommand{\major}{{\color{Maroon}\ding{170}\hspace{-3pt}\color{Blue}\ding{171}}\xspace}
+\newcommand{\passx}{{\small{PASS}}}
+\newcommand{\stopp}{{\color{Maroon}\textsc{stop}}\hspace{4pt}}
+\newcommand{\enemy}[1]{(#1)}
+\newcommand{\dbl}{{\color{Red}$\bm{\times}$}\xspace}
+\newcommand{\xdbl}{{\color{Red}$\bm{\times}$}}
+\newcommand{\rdbl}{{\color{Blue}$\bm{\times\!\times}$}\xspace}
+\newcommand{\alert}{{\color{Cyan}\textsc{alert}}\hspace{4pt}\xspace}
+\newcommand{\conventional}[1]{\textbf{#1*}}
+\newcommand{\dealnr}[1]{\Large\textbf{#1}}
+\newcommand{\dealer}[1]{\fbox{#1}}
+\newcommand{\alrt}{{\color{ProcessBlue}$^A$}}
+\newcommand{\soff}{{\color{CadetBlue}\textsc{sign-off}}\xspace}
+\newcommand{\mixed}{{\color{Fuchsia}\textbf{Mixed raise}}}
+\newcommand{\ns}{{\color{BurntOrange}\textbf{Non-Serious}}}
+\newcommand{\lsf}{{\color{WildStrawberry}\textbf{ASK LSF}}}
+\newcommand{\ahsf}{{\color{WildStrawberry}\textbf{ASK HSF}}}
+\newcommand{\hsf}{{\color{WildStrawberry}\textbf{HSF}}}
+\newcommand{\leb}{{\color{CadetBlue}\textbf{LEB}}}
+\newcommand*\link[1]{\hspace*{0em plus 1fill}\makebox{#1}}
+\newcommand{\imp}{{\color{BurntOrange}\link{\textbf{\large!}}}}
+\newcommand{\vimp}{{\color{OrangeRed}\link{\textbf{\large{!!}}}}}
+\newcommand{\exq}{{\color{JungleGreen}\link{\textbf{\large{?!}}}}}
+\newcommand{\qq}{{\color{WildStrawberry}\link{\textbf{\large{?}}}}}
+\newcommand{\addhcp}[1]{{\color{JungleGreen}\link{\textbf{\large{#1}}}}}
+\newcommand{\anysuit}[1]{{\color{PineGreen}{\textbf{{#1}}}}\xspace}
+\newcommand{\mins}{\textbf{m}\xspace}
+\newcommand{\majs}{\textbf{\small{M}}\xspace}
+\newcommand{\then}{$\rightarrow$\xspace}
+\newcommand{\orr}{\quad|\quad}
+
+% Provide 2 suits as arguments, ex. \twosuit{\spades}{\diams}.
+% The command will produce suit characters slightly overlapped.
+\newcommand{\twosuit}[2]{%
+    #1\unskip\hspace{-3pt}#2%
+}
+
+% Provide the bid that will be alerted, ex. \alrts{1\spades}.
+\newcommand{\alrts}[1]{%
+    #1\unskip{\textsuperscript{\textcolor{red}{A}}\xspace}%
+}
+
+% The command produces 'NT' with correct font in both normal text
+% and section titles.
+\newcommand{\nt}{%
+  \directlua{%
+      if isSectionTitle() then
+      tex.print("{\\small{NT}}\\xspace")
+      else
+      tex.sprint("\\textsc{nt}\\xspace")
+      end
+  }%
+}
+
+% The command produces 'PASS' with correct font in both normal text
+% and section titles.
+\newcommand{\pass}{%
+  \directlua{%
+    if isSectionTitle() then
+      tex.print("{\\small{PASS}}\\xspace")
+    else
+      tex.sprint("\\textsc{pass}\\xspace")
+    end
+  }%
+}
+
+% The command produces 'DP' with correct font in both normal text
+% and section titles.
+\newcommand{\dps}{%
+  \directlua{%
+    if isSectionTitle() then
+      tex.print("{\\small{DP}}\\xspace")
+    else
+      tex.sprint("\\textsc{dp}\\xspace")
+    end
+  }%
+}

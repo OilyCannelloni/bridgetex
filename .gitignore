@@ -24,3 +24,6 @@ dist-ssr
 *.sw?
 eslint.config.js
 index.html
+backend/temp/code.tex
+backend/temp/result.aux
+backend/temp/result.pdf

@@ -12,9 +12,11 @@
   "dependencies": {
     "ace-builds": "^1.43.2",
     "axios": "^1.10.0",
+    "pdfjs-dist": "^5.3.93",
     "react": "^19.1.0",
     "react-ace": "^14.0.1",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.1.0",
+    "react-pdf": "^10.0.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.30.1",

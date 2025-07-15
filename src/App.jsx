@@ -1,27 +1,14 @@
 
-
-import Editor from "./Editor";
+import EditorControl from "./EditorControl";
 import "ace-builds/src-noconflict/mode-latex";
 import "ace-builds/src-noconflict/theme-monokai";
 import "ace-builds/src-noconflict/ext-language_tools";
 
 import './App.css'
-import ace from "react-ace";
-
 
 function App() {
-  
-
   return (
-    <>
-      <div>
-          <Editor
-          />
-      </div>
-
-      
-      
-    </>
+    <EditorControl />
   )
 }
 

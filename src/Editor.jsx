@@ -16,20 +16,29 @@ export default function MyEditor() {
 
   function submitCode() {
     const code = getValue();
-    console.log(code);
+    console.log(code + "DUPaabaAA");
 
-    const response = fetch(
-        "http://localhost:6969/compile-lualatex",
-        {
-            method: "POST",
-            data: JSON.stringify({code: code}),
-            headers: {"Content-Type": "application/json"}
-        }
-    )
-    if (!response.ok) {
+    (async () => { 
+      const response = await fetch(
+          "http://localhost:6969/compile-lualatex",
+          {
+              method: 'POST',
+              mode: 'cors',
+              body: JSON.stringify({code: code}),
+              headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+              },
+          }
+      )
+      const content = await response.json();
+
+      if (!response.ok) {
         console.log(response.status)
-    }
-    console.log(response)
+      }
+      console.log(content)
+    })();
+    
   }
 
 

@@ -1,0 +1,17 @@
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+.control-buttons-wrapper {
+  margin: 20px;
+  padding: 10px;
+  background-color: #2f3129;
+  border-radius: 5px;
+}
+
+.submit-button {
+  background-color: #508147;
+}

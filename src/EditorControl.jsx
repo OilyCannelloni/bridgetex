@@ -21,7 +21,7 @@ export default function EditorControl() {
 
         (async () => { 
         const response = await fetch(
-            "http://localhost:6969/compile-lualatex",
+            "http://multi2diamonds.com:6969/compile-lualatex",
             {
                 method: 'POST',
                 mode: 'cors',

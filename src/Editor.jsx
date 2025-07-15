@@ -26,12 +26,15 @@ export default function MyEditor() {
               mode: 'cors',
               body: JSON.stringify({code: code}),
               headers: {
-                'Accept': 'application/json',
                 'Content-Type': 'application/json'
               },
           }
       )
-      const content = await response.json();
+      .then(resp => resp.blob())
+      .then(blob => {
+        var file = URL.createObjectURL(blob)
+        location.assign(file)
+      })
 
       if (!response.ok) {
         console.log(response.status)

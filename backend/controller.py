@@ -1,42 +1,10 @@
 from fastapi import FastAPI, Request
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from pathlib import Path
-import tempfile
-import subprocess
-
-class LuaLatexManager:
-    def __init__(self):
-        self.tmp_path = Path(__file__).parent.resolve() / "temp"
-        print(self.tmp_path)
-
-    def compile(self, code: str):
-        # Create file
-        tex_path = self.tmp_path / "code.tex"
-
-        with open(tex_path, "w", encoding="utf-8") as tf:
-            tf.write("\\documentclass{article}\n\\usepackage{import}\n\\import{./lib/}{bridge.sty}\n")
-            tf.write(code)
-        
-        # Compile
-        print("Compilating")
-        try:    
-            out = subprocess.check_output(
-                f"lualatex -interaction=nonstopmode --output-directory={self.tmp_path} --jobname=result code.tex",
-                stderr=subprocess.STDOUT,
-                shell=True,
-                timeout=10)
-            print(out.decode())
-
-        except subprocess.CalledProcessError as e:
-            print("Error")
-            print(e.output.decode())
-        except subprocess.TimeoutExpired:
-            print("Timeout")
-
-        return self.tmp_path / Path("result.pdf")
+from .tc.tc_downloader import TCResultsDriver
+from .lua.lua_compiler import LuaDriver
 
 
 
@@ -54,15 +22,32 @@ app.add_middleware(
 class CodeDTO(BaseModel):
     code: str
 
-lua = LuaLatexManager()
+class DownloadTcDTO(BaseModel):
+    url: str
+    boards: list | None
+
+
+lua_driver = LuaDriver()
+tc_driver = TCResultsDriver()
+
 
 @app.post("/compile-lualatex")
 def compile_lualatex(request: Request, codeDTO: CodeDTO):
-    filename = lua.compile(codeDTO.code)
+    filename = lua_driver.compile(codeDTO.code)
 
     headers = {'Access-Control-Expose-Headers': 'Content-Disposition'}
     return FileResponse(filename, filename="result.pdf", headers=headers)
 
+
+@app.post("/download-tc-init")
+async def download_tc(request: Request, download_tc_DTO: DownloadTcDTO):
+    return StreamingResponse(tc_driver.download_boards(download_tc_DTO.url, download_tc_DTO.boards), media_type="text/event_stream")
+
+@app.get("/download-tc-file/{hex_id}")
+def download_tc_file(request: Request, hex_id: str):
+    path = tc_driver.output_dir / f"analysis_{hex_id}.tex"
+    headers = {'Access-Control-Expose-Headers': 'Content-Disposition'}
+    return FileResponse(path, filename="analysis.tex", headers=headers)
 
 if __name__ == "__main__":
     import uvicorn

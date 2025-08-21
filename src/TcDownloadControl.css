@@ -1,0 +1,40 @@
+
+.url-box {
+  margin: 20px;
+  padding: 10px;
+  border-radius: 5px;
+  background-color: #696b64;
+  height: 200px;
+  width: 80vw;
+}
+
+.box-title {
+  margin: 20px;
+  padding: 10px;
+  border-radius: 5px;
+  background-color: #393939;
+  font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
+  font-size: large;
+}
+
+.box-input-wrapper {
+  margin: 20px;
+  padding: 10px;
+  border-radius: 5px;
+  background-color: #969696;
+  border: 5px solid #393939;
+}
+
+.box-input {
+    padding: 5px;
+    max-width: 100%;
+    width: 100%;
+    background-color: #969696;
+    border: none;
+    font-size: large;
+    font-family: 'Courier New', Courier, monospace;
+}
+
+.box-input:focus {
+    outline: none;
+}

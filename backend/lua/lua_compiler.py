@@ -3,9 +3,7 @@ import subprocess
 
 
 class LuaDriver:
-    def __init__(self):
-        self.tmp_path = Path(__file__).parent.resolve() / "temp"
-        print(self.tmp_path)
+    tmp_path = Path(__file__).parent.parent.resolve() / "temp"
 
     def compile(self, code: str):
         # Create file

@@ -17,6 +17,7 @@ from selenium.common.exceptions import TimeoutException
 
 from .models import Hand, BoardData
 from .bridgetex import build_analysis_template
+from ..system.tempfile_service import TempFileService
 
 
 class BoardLoadedEvent(BaseModel):
@@ -173,8 +174,7 @@ class TCResultsDownloader(webdriver.Chrome):
             
 
 class TCResultsDriver:
-    def __init__(self):
-        self.output_dir = Path(__file__).parent.parent.resolve() / "temp"
+    output_dir = Path(__file__).parent.parent.resolve() / "temp"
 
     def download_boards(self, url, boards):
         driver = TCResultsDownloader(url)
@@ -189,11 +189,11 @@ class TCResultsDriver:
 
         id = hex(random.getrandbits(16))[2:]
         name = f"analysis_{id}.tex"
-        build_analysis_template(driver.board_data.values(), self.output_dir / name)
+
+        with TempFileService.TEMP_MUTEX:
+            build_analysis_template(driver.board_data.values(), self.output_dir / name)
+
         yield TcFileReadyEvent(id=id).to_sse()
         
-        # except Exception as ex:
-        #     yield ErrorEvent(f"{ex}").to_sse()
-        #     raise ex from None
             
 

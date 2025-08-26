@@ -21,9 +21,6 @@ interface BoardLoadedEvent {
 export default function TcDownloadControl() {
     const [lastEvent, setLastEvent] = useState(null)
 
-    function download_file(session_id: string) {
-        
-    }
 
     function submit() {
         const data: DownloadTcDTO = {
@@ -53,7 +50,7 @@ export default function TcDownloadControl() {
 
             eventSource.addEventListener("tcFileReady", (event) => {
                 console.log("TC file ready:", event.data);
-                download_file(session_id);
+                window.open(`http://localhost:6969/download-tc-file/${session_id}`, "_blank")
             });
 
             eventSource.onerror = (err) => {

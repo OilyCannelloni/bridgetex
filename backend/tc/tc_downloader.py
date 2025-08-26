@@ -39,7 +39,7 @@ class ErrorEvent(BaseModel):
     message: str   
 
     def to_sse(self):
-        return f"event: error\ndata: {self.model_dump_json()}\n\n"
+        return f"event: download_error\ndata: {self.model_dump_json()}\n\n"
 
 
 class TCResultsDownloader(webdriver.Chrome):

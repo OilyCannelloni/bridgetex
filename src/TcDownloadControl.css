@@ -1,10 +1,9 @@
 
-.url-box {
+.element-box {
   margin: 20px;
   padding: 10px;
   border-radius: 5px;
   background-color: #696b64;
-  height: 200px;
 }
 
 .box-title {
@@ -35,4 +34,13 @@
 
 .box-input:focus {
     outline: none;
+}
+
+.submit-button {
+  margin: 5px;
+  background-color: #508147;
+}
+
+.submit-button:hover {
+  outline: #fff solid 2px !important;
 }

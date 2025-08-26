@@ -18,9 +18,9 @@ interface BoardLoadedEvent {
     board_content: string;
 }
 
-export default function TcDownloadControl() {
-    const [lastEvent, setLastEvent] = useState(null)
 
+export default function TcDownloadControl() {
+    const [lastEvent, setLastEvent] = useState<BoardLoadedEvent | string>("")
 
     function submit() {
         const data: DownloadTcDTO = {
@@ -44,37 +44,53 @@ export default function TcDownloadControl() {
 
             const eventSource = new EventSource(`http://localhost:6969/download-tc-sse/${session_id}`);
             eventSource.addEventListener("boardLoaded", (event) => {
-                console.log("Board loaded:", event.data);
-                setLastEvent(event.data);
+                setLastEvent(JSON.parse(event.data));
             });
 
             eventSource.addEventListener("tcFileReady", (event) => {
-                console.log("TC file ready:", event.data);
                 window.open(`http://localhost:6969/download-tc-file/${session_id}`, "_blank")
             });
 
-            eventSource.onerror = (err) => {
-                console.log("SSE error:", err);
+            eventSource.addEventListener("download_error", (event) => {
+                setLastEvent(`Błąd: ${JSON.parse(event.data).message}`)
                 eventSource.close();
-            };
+            });
         })()
     }
 
+    function renderDescription() {
+        return 
+    }
 
     return <div>
-        <div className="url-box">
+        <div className="element-box">
             <div className="box-title">
                 Wklej poniżej link to turnieju, np <br /> https://mzbs.pl/files/2021/wyniki/zs/250820/  
             </div>
             <div className="box-input-wrapper">
                 <input type='text' className="box-input" id="url-input">
-
                 </input>
             </div>
         </div>
         
-        <div className="control-buttons-wrapper">
-            <button className="submit-button" onClick={submit}>Submit</button>
+        <div className="element-box">
+            <div>
+                <button className="submit-button" onClick={submit}>Wyślij</button>
+            </div>
+            <div>
+                <span> 
+                    {(() => {
+                        return typeof(lastEvent) == 'string' 
+                                ? lastEvent 
+                                : `Processing board ${lastEvent.sequence_number} of ${lastEvent.total_boards}`
+                    })()}
+                </span>
+            </div>
+            <div>
+                <progress value={typeof(lastEvent) == 'string' 
+                                    ? 0
+                                    : lastEvent.sequence_number / lastEvent.total_boards} />
+            </div>
         </div>
     </div>
 }

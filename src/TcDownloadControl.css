@@ -1,3 +1,7 @@
+.main {
+  width: 100%;
+  max-width: 1200px;
+}
 
 .element-box {
   margin: 20px;

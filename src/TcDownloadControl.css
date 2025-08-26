@@ -23,6 +23,11 @@
   border: 5px solid #393939;
 }
 
+.box-input-wrapper-blank {
+  margin: 20px;
+  padding: 10px;
+}
+
 .box-input {
     padding: 5px;
     width: 100%;

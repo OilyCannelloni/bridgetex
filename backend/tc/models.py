@@ -50,5 +50,5 @@ class CodeDTO(BaseModel):
 
 class DownloadTcDTO(BaseModel):
     url: str
-    boards: list | None
+    boards: str
 

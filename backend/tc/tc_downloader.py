@@ -6,22 +6,29 @@ and generate a LaTeX file with the hand diagrams.
 import re
 import time
 import random
-import json
+from typing import Generator
 from pydantic import BaseModel
 from dataclasses import dataclass
 from pathlib import Path
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
-from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import TimeoutException, JavascriptException
+from abc import ABC, abstractmethod
 
 from .models import *
 from .bridgetex import build_analysis_template
 from ..system.tempfile_service import TempFileService
 
 
-class BoardLoadedEvent(BaseModel):
+class SSEEvent(BaseModel):
+    @abstractmethod
+    def to_sse() -> str:
+        pass
+
+class BoardLoadedEvent(SSEEvent, ABC):
     sequence_number: int
+    tournament_seqnence_number: int
     board_number: str
     total_boards: int
     board_content: str = ""
@@ -29,17 +36,23 @@ class BoardLoadedEvent(BaseModel):
     def to_sse(self):
         return f"event: boardLoaded\ndata: {self.model_dump_json()}\n\n"
 
-class TcFileReadyEvent(BaseModel):
+class TcFileReadyEvent(SSEEvent, ABC):
     id: str 
 
     def to_sse(self):
         return f"event: tcFileReady\ndata: {self.model_dump_json()}\n\n"
     
-class ErrorEvent(BaseModel):
+
+class ErrorEvent(SSEEvent, ABC):
     message: str   
 
     def to_sse(self):
         return f"event: download_error\ndata: {self.model_dump_json()}\n\n"
+
+
+class ForceCloseEvent(SSEEvent, ABC):
+    def to_sse(self):
+        return f"retry: 10000000\n\nevent: end\n\n"
 
 
 class TCResultsDownloader(webdriver.Chrome):
@@ -64,7 +77,7 @@ class TCResultsDownloader(webdriver.Chrome):
         """
         This method returns the URL tail for the given board number.
         """
-        return f"#000000RB0000000000{board_number:02d}000001000001000000000000000000"
+        return f"#000000RB000000000{board_number:03d}000001000001000000000000000000"
 
     def initialize(self, url_base: str):
         """
@@ -160,11 +173,12 @@ class TCResultsDownloader(webdriver.Chrome):
 
         true_number_str = '' if self.active_board_nr == true_number else f'({true_number})'
         print(f"Loaded board #{self.active_board_nr}{true_number_str}:")
-        print(str(board))
+        # print(str(board))
         return BoardLoadedEvent(
-            sequence_number=self.active_board_nr, 
+            tournament_seqnence_number=self.active_board_nr, 
             board_number=true_number_str, 
             total_boards=-1, 
+            sequence_number=-1,
             board_content=str(board))
 
     # pylint: disable=E0202
@@ -179,7 +193,7 @@ class TCResultsDownloader(webdriver.Chrome):
 class TCResultsDriver:
     class TCSession:
         url: str
-        boards: list[int]
+        boards: str
         creation_date: int
 
         def __init__(self, tc_dto: DownloadTcDTO):
@@ -187,6 +201,11 @@ class TCResultsDriver:
             self.boards = tc_dto.boards
             self.creation_date = time.time()
 
+    class BoardStringError(Exception):
+        pass
+
+    class InvalidSessionIdError(Exception):
+        pass
         
     output_dir = Path(__file__).parent.parent.resolve() / "temp"
     _sessions: dict[str, TCSession] = {}
@@ -202,28 +221,63 @@ class TCResultsDriver:
             if now - self._sessions[id].creation_date >= 5 * 60:
                 self._sessions.pop(id, None)
 
-    def download_boards(self, session_id):
+    def resolve_boards(self, boards_str) -> list[int]:
         try:
+            boards = []
+            for part in boards_str.split(","):
+                token = part.strip()
+                if not "-" in token:
+                    boards.append(int(token))
+                    continue
+                l, r = token.split("-")
+                boards.extend(list(range(int(l), int(r) + 1)))
+            return boards
+
+        except ValueError:
+            raise self.BoardStringError
+
+    def download_boards(self, session_id: str) -> Generator[str]:
+        for e in self._download_boards(session_id):
+            yield e.to_sse()
+
+    def _download_boards(self, session_id) -> Generator[SSEEvent]:
+        try:
+            if session_id not in self._sessions.keys():
+                raise self.InvalidSessionIdError
+
+            boards = self.resolve_boards(self._sessions[session_id].boards)
+
             driver = TCResultsDownloader(self._sessions[session_id].url)
 
-            boards = self._sessions[session_id].boards
             if len(boards) == 0:
                 boards = driver.board_numbers
 
-            for board in boards:
+            for i, board in enumerate(boards):
+                if board not in driver.board_numbers:
+                    yield ErrorEvent(message=f"Rozdanie {board} nie istnieje w tym turnieju.")
+                    continue
                 bl_e = driver.load_board(board)
                 bl_e.total_boards = len(boards)
-                yield bl_e.to_sse()
+                bl_e.sequence_number = i + 1
+                yield bl_e
 
             name = f"analysis_{session_id}.tex"
 
             with TempFileService.TEMP_MUTEX:
                 build_analysis_template(driver.board_data.values(), self.output_dir / name)
+            yield TcFileReadyEvent(id=session_id)
 
-            yield TcFileReadyEvent(id=session_id).to_sse()
-        except:
-            yield ErrorEvent(message="Invalid URL").to_sse()
+        except self.BoardStringError:
+            yield ErrorEvent(message="Nieprawidłowy format podanych rozdań.")
+            yield ForceCloseEvent()
+        except self.InvalidSessionIdError:
+            yield ErrorEvent(message="Nieprawidłowe ID sesji")
+            yield ForceCloseEvent()
+        except (JavascriptException, TimeoutException):
+            yield ErrorEvent(message="Nieprawidłowy link.")
+            yield ForceCloseEvent()
         finally:
             self._sessions.pop(session_id, None)
+            
             
 

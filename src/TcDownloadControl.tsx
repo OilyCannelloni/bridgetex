@@ -4,7 +4,7 @@ import './TcDownloadCOntrol.css'
 
 interface DownloadTcDTO {
     url: string;
-    boards: number[];
+    boards: string;
 }
 
 interface SessionIdDTO {
@@ -22,10 +22,12 @@ interface BoardLoadedEvent {
 export default function TcDownloadControl() {
     const [lastEvent, setLastEvent] = useState<BoardLoadedEvent | string>("")
 
+    var eventSource: EventSource;
+
     function submit() {
         const data: DownloadTcDTO = {
             url: (document.getElementById("url-input") as HTMLInputElement)?.value || "",
-            boards: [1, 2, 3]
+            boards: (document.getElementById("boards-input") as HTMLInputElement)?.value || "",
         };
         
         (async () => {
@@ -42,24 +44,31 @@ export default function TcDownloadControl() {
 
             const session_id = (await response.json() as SessionIdDTO).session_id;
 
-            const eventSource = new EventSource(`http://localhost:6969/download-tc-sse/${session_id}`);
+            eventSource = new EventSource(`http://localhost:6969/download-tc-sse/${session_id}`);
             eventSource.addEventListener("boardLoaded", (event) => {
                 setLastEvent(JSON.parse(event.data));
             });
 
             eventSource.addEventListener("tcFileReady", (event) => {
-                window.open(`http://localhost:6969/download-tc-file/${session_id}`, "_blank")
+                const link = document.createElement("a");
+                link.href = `http://localhost:6969/download-tc-file/${session_id}`;
+                link.download = "analysis.tex";
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+                setLastEvent("Plik wygenerowany pomyślnie.");
+                eventSource.close();
             });
 
             eventSource.addEventListener("download_error", (event) => {
                 setLastEvent(`Błąd: ${JSON.parse(event.data).message}`)
+            });
+
+            eventSource.addEventListener("end", () => {
                 eventSource.close();
             });
         })()
-    }
-
-    function renderDescription() {
-        return 
     }
 
     return <div>
@@ -70,6 +79,16 @@ export default function TcDownloadControl() {
             <div className="box-input-wrapper">
                 <input type='text' className="box-input" id="url-input">
                 </input>
+            </div>
+
+            <div className="box-input-wrapper-blank">
+                <div>
+                    Numery rozdań: 
+                </div>
+                <div className="box-input-wrapper">
+                    <input type='text' className="box-input" id="boards-input">
+                    </input>
+                </div>
             </div>
         </div>
         
@@ -82,7 +101,7 @@ export default function TcDownloadControl() {
                     {(() => {
                         return typeof(lastEvent) == 'string' 
                                 ? lastEvent 
-                                : `Processing board ${lastEvent.sequence_number} of ${lastEvent.total_boards}`
+                                : `Przetwarzanie rozdania ${lastEvent.sequence_number} z ${lastEvent.total_boards}`
                     })()}
                 </span>
             </div>

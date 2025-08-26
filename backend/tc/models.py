@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from pydantic import BaseModel
 
 
 def get_vul(board_n):
@@ -42,3 +43,12 @@ class BoardData:
                 f"{{{self.east.to_vhand()}}}\n"
                 f"{{{self.south.to_vhand()}}}\n"
                 f"{{{get_vul(self.number)}}}\n")
+    
+
+class CodeDTO(BaseModel):
+    code: str
+
+class DownloadTcDTO(BaseModel):
+    url: str
+    boards: list | None
+

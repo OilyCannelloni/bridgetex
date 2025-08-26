@@ -15,7 +15,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 from selenium.common.exceptions import TimeoutException
 
-from .models import Hand, BoardData
+from .models import *
 from .bridgetex import build_analysis_template
 from ..system.tempfile_service import TempFileService
 
@@ -49,6 +49,9 @@ class TCResultsDownloader(webdriver.Chrome):
     def __init__(self, url: str):
         options = Options()
         options.add_argument("--headless=new")
+        options.add_argument("--log-level=3")  # suppress INFO and WARNING
+        options.add_experimental_option('excludeSwitches', ['enable-logging'])
+
         super().__init__(options=options)
         self.url_base = ""
         self.active_board_nr: int | None = None
@@ -174,26 +177,53 @@ class TCResultsDownloader(webdriver.Chrome):
             
 
 class TCResultsDriver:
-    output_dir = Path(__file__).parent.parent.resolve() / "temp"
+    class TCSession:
+        url: str
+        boards: list[int]
+        creation_date: int
 
-    def download_boards(self, url, boards):
-        driver = TCResultsDownloader(url)
-        # try:
-        if len(boards) == 0:
-            boards = driver.board_numbers
+        def __init__(self, tc_dto: DownloadTcDTO):
+            self.url = tc_dto.url
+            self.boards = tc_dto.boards
+            self.creation_date = time.time()
 
-        for board in boards:
-            bl_e = driver.load_board(board)
-            bl_e.total_boards = len(boards)
-            yield bl_e.to_sse()
-
-        id = hex(random.getrandbits(16))[2:]
-        name = f"analysis_{id}.tex"
-
-        with TempFileService.TEMP_MUTEX:
-            build_analysis_template(driver.board_data.values(), self.output_dir / name)
-
-        yield TcFileReadyEvent(id=id).to_sse()
         
+    output_dir = Path(__file__).parent.parent.resolve() / "temp"
+    _sessions: dict[str, TCSession] = {}
+
+    def create_session(self, download_dto: DownloadTcDTO):
+        id = hex(random.getrandbits(16))[2:]
+        self._sessions[id] = self.TCSession(download_dto)
+        return id
+
+    def clear_sessions(self):
+        now = time.time()
+        for id in self._sessions.keys():
+            if now - self._sessions[id].creation_date >= 5 * 60:
+                self._sessions.pop(id, None)
+
+    def download_boards(self, session_id):
+        try:
+            driver = TCResultsDownloader(self._sessions[session_id].url)
+
+            boards = self._sessions[session_id].boards
+            if len(boards) == 0:
+                boards = driver.board_numbers
+
+            for board in boards:
+                bl_e = driver.load_board(board)
+                bl_e.total_boards = len(boards)
+                yield bl_e.to_sse()
+
+            name = f"analysis_{session_id}.tex"
+
+            with TempFileService.TEMP_MUTEX:
+                build_analysis_template(driver.board_data.values(), self.output_dir / name)
+
+            yield TcFileReadyEvent(id=session_id).to_sse()
+        except:
+            yield ErrorEvent(message="Invalid URL").to_sse()
+        finally:
+            self._sessions.pop(session_id, None)
             
 

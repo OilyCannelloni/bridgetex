@@ -27,3 +27,4 @@ backend/temp/*
 !backend/temp/lib
 dist.zip
 *.pyc
+releases/*

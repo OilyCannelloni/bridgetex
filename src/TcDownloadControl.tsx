@@ -1,6 +1,7 @@
 
 import { useEffect, useState } from 'react';
-import './TcDownloadCOntrol.css'
+import './TcDownloadControl.css'
+import { API_URL } from './config';
 
 interface DownloadTcDTO {
     url: string;
@@ -43,8 +44,7 @@ export default function TcDownloadControl() {
         }
         
         (async () => {
-            const response = await fetch(
-            "http://localhost:6969/download-tc-init",
+            const response = await fetch(`${API_URL}/download-tc-init`,
             {
                 method: 'POST',
                 mode: 'cors',
@@ -56,14 +56,14 @@ export default function TcDownloadControl() {
 
             const session_id = (await response.json() as SessionIdDTO).session_id;
 
-            eventSource = new EventSource(`http://localhost:6969/download-tc-sse/${session_id}`);
+            eventSource = new EventSource(`${API_URL}/download-tc-sse/${session_id}`);
             eventSource.addEventListener("boardLoaded", (event) => {
                 setLastEvent(JSON.parse(event.data));
             });
 
             eventSource.addEventListener("tcFileReady", (event) => {
                 const link = document.createElement("a");
-                link.href = `http://localhost:6969/download-tc-file/${session_id}`;
+                link.href = `${API_URL}/download-tc-file/${session_id}`;
                 link.download = "analysis.tex";
                 document.body.appendChild(link);
                 link.click();

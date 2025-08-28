@@ -73,6 +73,12 @@ class TCResultsDownloader(webdriver.Chrome):
 
         self.initialize(url)
 
+    def __enter__(self):
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.quit()
+
     def get_url_tail(self, board_number: int) -> str:
         """
         This method returns the URL tail for the given board number.
@@ -247,25 +253,24 @@ class TCResultsDriver:
 
             boards = self.resolve_boards(self._sessions[session_id].boards)
 
-            driver = TCResultsDownloader(self._sessions[session_id].url)
+            with TCResultsDownloader(self._sessions[session_id].url) as driver:
+                if len(boards) == 0:
+                    boards = driver.board_numbers
 
-            if len(boards) == 0:
-                boards = driver.board_numbers
+                for i, board in enumerate(boards):
+                    if board not in driver.board_numbers:
+                        yield ErrorEvent(message=f"Rozdanie {board} nie istnieje w tym turnieju.")
+                        continue
+                    bl_e = driver.load_board(board)
+                    bl_e.total_boards = len(boards)
+                    bl_e.sequence_number = i + 1
+                    yield bl_e
 
-            for i, board in enumerate(boards):
-                if board not in driver.board_numbers:
-                    yield ErrorEvent(message=f"Rozdanie {board} nie istnieje w tym turnieju.")
-                    continue
-                bl_e = driver.load_board(board)
-                bl_e.total_boards = len(boards)
-                bl_e.sequence_number = i + 1
-                yield bl_e
+                name = f"analysis_{session_id}.tex"
 
-            name = f"analysis_{session_id}.tex"
-
-            with TempFileService.TEMP_MUTEX:
-                build_analysis_template(driver.board_data.values(), self.output_dir / name)
-            yield TcFileReadyEvent(id=session_id)
+                with TempFileService.TEMP_MUTEX:
+                    build_analysis_template(driver.board_data.values(), self.output_dir / name)
+                yield TcFileReadyEvent(id=session_id)
 
         except self.BoardStringError:
             yield ErrorEvent(message="Nieprawidłowy format podanych rozdań.")
@@ -278,6 +283,10 @@ class TCResultsDriver:
             yield ForceCloseEvent()
         finally:
             self._sessions.pop(session_id, None)
-            
+            if driver is not None:
+                try:
+                    driver.quit()
+                except Exception:
+                    pass
             
 

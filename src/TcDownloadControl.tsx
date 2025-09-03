@@ -22,23 +22,31 @@ interface BoardLoadedEvent {
 
 export default function TcDownloadControl() {
     const [lastEvent, setLastEvent] = useState<BoardLoadedEvent | string>("")
-    const [waiting, setWaiting] = useState(false);
+    const [waiting, setWaiting] = useState(false)
+    const [clicks, setClicks] = useState(0)
+    const [nEvents, setNEvents] = useState(0)
+
+    useEffect(() => {
+        setWaiting(true)
+        console.log("true")
+    }, [clicks])
 
     useEffect(() => {
         setWaiting(false)
-    }, [lastEvent])
+        console.log("false")
+    }, [nEvents])
 
     var eventSource: EventSource;
 
     function submit() {
-        setWaiting(true)
+        setClicks(clicks + 1)
         const data: DownloadTcDTO = {
             url: (document.getElementById("url-input") as HTMLInputElement)?.value || "",
             boards: (document.getElementById("boards-input") as HTMLInputElement)?.value || "",
         };
 
-        if (data.url == "" || data.boards == "") {
-            setLastEvent("Uzupełnij wszystkie pola.")
+        if (data.url == "") {
+            setLastEvent("Uzupełnij link do turnieju.")
             setWaiting(false)
             return
         }
@@ -59,6 +67,7 @@ export default function TcDownloadControl() {
             eventSource = new EventSource(`${API_URL}/download-tc-sse/${session_id}`);
             eventSource.addEventListener("boardLoaded", (event) => {
                 setLastEvent(JSON.parse(event.data));
+                setNEvents(nEvents + 1)
             });
 
             eventSource.addEventListener("tcFileReady", (event) => {
@@ -70,12 +79,14 @@ export default function TcDownloadControl() {
                 document.body.removeChild(link);
 
                 setLastEvent("Plik wygenerowany pomyślnie.");
-                setWaiting(true)
+                setNEvents(nEvents + 1)
                 eventSource.close();
             });
 
+
             eventSource.addEventListener("download_error", (event) => {
                 setLastEvent(`Błąd: ${JSON.parse(event.data).message}`)
+                setNEvents(nEvents + 1)
             });
 
             eventSource.addEventListener("end", () => {
@@ -96,10 +107,10 @@ export default function TcDownloadControl() {
 
             <div className="box-input-wrapper-blank">
                 <div>
-                    Numery rozdań (np. 3-7, 16, 21): 
+                    Numery rozdań, np. 3, 7, 16-21 (opcjonalnie): 
                 </div>
                 <div className="box-input-wrapper">
-                    <input type='text' className="box-input" id="boards-input">
+                    <input type='text' className="box-input" id="boards-input" placeholder="Wszystkie">
                     </input>
                 </div>
             </div>

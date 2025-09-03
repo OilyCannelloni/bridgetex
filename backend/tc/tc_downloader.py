@@ -85,15 +85,23 @@ class TCResultsDownloader(webdriver.Chrome):
         """
         return f"#000000RB000000000{board_number:03d}000001000001000000000000000000"
 
-    def initialize(self, url_base: str):
+    def initialize(self, url: str):
         """
         This method prepares the driver by loading the main page and
         extracting the board numbers.
         """
-        self.url_base = url_base
-        self.get(self.url_base)
-        time.sleep(0.5)
+        self.url_base = self.prepare_url(url)
+        try:
+            self.get(self.url_base)
+            time.sleep(0.5)
+        except:
+            raise TimeoutException()
         self.board_numbers = self.execute_script("return settings.BoardsNumbers")
+
+    def prepare_url(self, url: str):
+        if '#' not in url:
+            return url
+        return url[:url.index('#')]
 
     def set_active_board(self, board_number):
         """
@@ -186,15 +194,7 @@ class TCResultsDownloader(webdriver.Chrome):
             total_boards=-1, 
             sequence_number=-1,
             board_content=str(board))
-
-    # pylint: disable=E0202
-    def board_numbers(self):
-        """
-        This method returns an iterator for the board numbers.
-        """
-        for m in self.board_numbers:
-            yield m
-            
+    
 
 class TCResultsDriver:
     class TCSession:
@@ -207,12 +207,14 @@ class TCResultsDriver:
             self.boards = tc_dto.boards
             self.creation_date = time.time()
 
-    class BoardStringError(Exception):
-        pass
 
-    class InvalidSessionIdError(Exception):
-        pass
+    class DriverError(Exception):
+        message: str
+        def __init__(self, message, *args):
+            super().__init__(*args)
+            self.message = message
         
+
     output_dir = Path(__file__).parent.parent.resolve() / "temp"
     _sessions: dict[str, TCSession] = {}
 
@@ -229,6 +231,9 @@ class TCResultsDriver:
 
     def resolve_boards(self, boards_str) -> list[int]:
         try:
+            if boards_str == '' or boards_str == '0':
+                return []
+
             boards = []
             for part in boards_str.split(","):
                 token = part.strip()
@@ -240,23 +245,25 @@ class TCResultsDriver:
             return boards
 
         except ValueError:
-            raise self.BoardStringError
+            raise self.DriverError("Nieprawidłowy format podanych rozdań.")
 
-    def download_boards(self, session_id: str) -> Generator[str]:
+    def download_boards(self, session_id: str) -> Generator[str, None, None]:
         for e in self._download_boards(session_id):
             yield e.to_sse()
 
-    def _download_boards(self, session_id) -> Generator[SSEEvent]:
+    def _download_boards(self, session_id) -> Generator[SSEEvent, None, None]:
         try:
             if session_id not in self._sessions.keys():
-                raise self.InvalidSessionIdError
+                raise self.DriverError("Nieprawidłowe ID sesji")
 
             boards = self.resolve_boards(self._sessions[session_id].boards)
 
             with TCResultsDownloader(self._sessions[session_id].url) as driver:
                 if len(boards) == 0:
                     boards = driver.board_numbers
-
+                    if len(boards) > 50:
+                        raise self.DriverError("Turniej ma więcej niż 50 rozdań. Jeśli na pewno chcesz pobrać je wszystkie, podaj ich dokładne numery.")
+                        
                 for i, board in enumerate(boards):
                     if board not in driver.board_numbers:
                         yield ErrorEvent(message=f"Rozdanie {board} nie istnieje w tym turnieju.")
@@ -272,21 +279,20 @@ class TCResultsDriver:
                     build_analysis_template(driver.board_data.values(), self.output_dir / name)
                 yield TcFileReadyEvent(id=session_id)
 
-        except self.BoardStringError:
-            yield ErrorEvent(message="Nieprawidłowy format podanych rozdań.")
+        except self.DriverError as err:
+            yield ErrorEvent(message=err.message)
             yield ForceCloseEvent()
-        except self.InvalidSessionIdError:
-            yield ErrorEvent(message="Nieprawidłowe ID sesji")
-            yield ForceCloseEvent()
+
         except (JavascriptException, TimeoutException):
             yield ErrorEvent(message="Nieprawidłowy link.")
             yield ForceCloseEvent()
+
         finally:
             self._sessions.pop(session_id, None)
-            if driver is not None:
-                try:
+            try:
+                if driver is not None:
                     driver.quit()
-                except Exception:
-                    pass
+            except Exception:
+                pass
             
 

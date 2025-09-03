@@ -41,6 +41,10 @@
     font-family: 'Courier New', Courier, monospace;
 }
 
+.box-input::placeholder {
+  color: #d3d6d6;
+}
+
 .box-input:focus {
     outline: none;
 }

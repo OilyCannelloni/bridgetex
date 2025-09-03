@@ -263,7 +263,10 @@ class TCResultsDriver:
                     boards = driver.board_numbers
                     if len(boards) > 50:
                         raise self.DriverError("Turniej ma więcej niż 50 rozdań. Jeśli na pewno chcesz pobrać je wszystkie, podaj ich dokładne numery.")
-                        
+                
+                if set(boards).isdisjoint(set(driver.board_numbers)):
+                    raise self.DriverError("Żaden z podanych numerów rozdań nie istnieje w tym turnieju.")
+
                 for i, board in enumerate(boards):
                     if board not in driver.board_numbers:
                         yield ErrorEvent(message=f"Rozdanie {board} nie istnieje w tym turnieju.")

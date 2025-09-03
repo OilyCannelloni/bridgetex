@@ -57,3 +57,7 @@
 .submit-button:hover {
   outline: #fff solid 2px !important;
 }
+
+.text-div {
+  text-align: left;
+}

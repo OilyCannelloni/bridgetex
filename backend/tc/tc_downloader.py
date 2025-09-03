@@ -17,7 +17,7 @@ from selenium.common.exceptions import TimeoutException, JavascriptException
 from abc import ABC, abstractmethod
 
 from .models import *
-from .bridgetex import build_analysis_template
+from .bridgetex import build_analysis_template, build_pbn
 from ..system.tempfile_service import TempFileService
 
 
@@ -37,7 +37,8 @@ class BoardLoadedEvent(SSEEvent, ABC):
         return f"event: boardLoaded\ndata: {self.model_dump_json()}\n\n"
 
 class TcFileReadyEvent(SSEEvent, ABC):
-    id: str 
+    session_id: str 
+    file_type: str
 
     def to_sse(self):
         return f"event: tcFileReady\ndata: {self.model_dump_json()}\n\n"
@@ -50,7 +51,7 @@ class ErrorEvent(SSEEvent, ABC):
         return f"event: download_error\ndata: {self.model_dump_json()}\n\n"
 
 
-class ForceCloseEvent(SSEEvent, ABC):
+class CloseEvent(SSEEvent, ABC):
     def to_sse(self):
         return f"retry: 10000000\n\nevent: end\n\n"
 
@@ -201,11 +202,13 @@ class TCResultsDriver:
         url: str
         boards: str
         creation_date: int
+        file_types: FileTypes
 
         def __init__(self, tc_dto: DownloadTcDTO):
             self.url = tc_dto.url
             self.boards = tc_dto.boards
             self.creation_date = time.time()
+            self.file_types = tc_dto.file_types
 
 
     class DriverError(Exception):
@@ -248,54 +251,82 @@ class TCResultsDriver:
             raise self.DriverError("Nieprawidłowy format podanych rozdań.")
 
     def download_boards(self, session_id: str) -> Generator[str, None, None]:
-        for e in self._download_boards(session_id):
-            yield e.to_sse()
-
-    def _download_boards(self, session_id) -> Generator[SSEEvent, None, None]:
-        try:
+        try: 
             if session_id not in self._sessions.keys():
                 raise self.DriverError("Nieprawidłowe ID sesji")
 
-            boards = self.resolve_boards(self._sessions[session_id].boards)
+            session = self._sessions[session_id]
+            boards = self.resolve_boards(session.boards)
 
-            with TCResultsDownloader(self._sessions[session_id].url) as driver:
-                if len(boards) == 0:
-                    boards = driver.board_numbers
-                    if len(boards) > 50:
-                        raise self.DriverError("Turniej ma więcej niż 50 rozdań. Jeśli na pewno chcesz pobrać je wszystkie, podaj ich dokładne numery.")
-                
-                if set(boards).isdisjoint(set(driver.board_numbers)):
-                    raise self.DriverError("Żaden z podanych numerów rozdań nie istnieje w tym turnieju.")
-
-                for i, board in enumerate(boards):
-                    if board not in driver.board_numbers:
-                        yield ErrorEvent(message=f"Rozdanie {board} nie istnieje w tym turnieju.")
-                        continue
-                    bl_e = driver.load_board(board)
-                    bl_e.total_boards = len(boards)
-                    bl_e.sequence_number = i + 1
-                    yield bl_e
-
-                name = f"analysis_{session_id}.tex"
-
-                with TempFileService.TEMP_MUTEX:
-                    build_analysis_template(driver.board_data.values(), self.output_dir / name)
-                yield TcFileReadyEvent(id=session_id)
+            with TCResultsDownloader(session.url) as downloader:
+                for e in self._download_boards(session_id, downloader, boards):
+                    yield e.to_sse().encode('utf-8')
 
         except self.DriverError as err:
             yield ErrorEvent(message=err.message)
-            yield ForceCloseEvent()
-
+            yield CloseEvent()
         except (JavascriptException, TimeoutException):
             yield ErrorEvent(message="Nieprawidłowy link.")
-            yield ForceCloseEvent()
-
+            yield CloseEvent()
         finally:
             self._sessions.pop(session_id, None)
             try:
-                if driver is not None:
-                    driver.quit()
+                if downloader is not None:
+                    downloader.quit()
             except Exception:
                 pass
+
+
+    def _download_boards(self, session_id: str, downloader: TCResultsDownloader, boards: list[int]) -> Generator[str, None, None]:
+        if session_id not in self._sessions.keys():
+            raise self.DriverError("Nieprawidłowe ID sesji")
+
+        session = self._sessions[session_id]
+        boards = self.resolve_boards(session.boards)
+
+        with TCResultsDownloader(session.url) as downloader:
+            if len(boards) == 0:
+                boards = downloader.board_numbers
+                if len(boards) > 50:
+                    raise self.DriverError("Turniej ma więcej niż 50 rozdań. Jeśli na pewno chcesz pobrać je wszystkie, podaj ich dokładne numery.")
+            
+            if set(boards).isdisjoint(set(downloader.board_numbers)):
+                raise self.DriverError("Żaden z podanych numerów rozdań nie istnieje w tym turnieju.")
+
+            for i, board in enumerate(boards):
+                if board not in downloader.board_numbers:
+                    yield ErrorEvent(message=f"Rozdanie {board} nie istnieje w tym turnieju.")
+                    continue
+                bl_e = downloader.load_board(board)
+                bl_e.total_boards = len(boards)
+                bl_e.sequence_number = i + 1
+                yield bl_e
+
+            if session.file_types.tex:
+                yield self.generate_tex_file(session, session_id, downloader.board_data.values())
+            time.sleep(0.5)
+            if session.file_types.pbn:
+                yield self.generate_pbn_file(session, session_id, downloader.board_data.values())
+            yield CloseEvent()
+
+
+    def generate_tex_file(self, session, session_id, board_data):
+        if session.file_types.tex:
+            name = f"{session_id}.tex"
+            TempFileService.TEMP_RWLOCK.acquire_read()
+            build_analysis_template(board_data, self.output_dir / name)
+            TempFileService.TEMP_RWLOCK.release_read()
+            return TcFileReadyEvent(session_id=session_id, file_type="tex")
+            
+    def generate_pbn_file(self, session, session_id, board_data):
+        if session.file_types.pbn:
+            name = f"{session_id}.pbn"
+            TempFileService.TEMP_RWLOCK.acquire_read()
+            build_pbn(board_data, self.output_dir / name)
+            TempFileService.TEMP_RWLOCK.release_read()
+            return TcFileReadyEvent(session_id=session_id, file_type="pbn")
+
+
+        
             
 

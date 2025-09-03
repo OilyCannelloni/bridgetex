@@ -48,15 +48,19 @@ async def download_tc(download_tc_DTO: DownloadTcDTO):
    
 
 @app.get("/download-tc-sse/{session_id}")
-async def download_tc_sse(session_id: str):
-     return StreamingResponse(tc_driver.download_boards(session_id), media_type="text/event-stream")
+def download_tc_sse(session_id: str):
+    headers = {
+        "Cache-Control": "no-cache",
+        "X-Accel-Buffering": "no"
+    }
+    return StreamingResponse(tc_driver.download_boards(session_id), media_type="text/event-stream", headers=headers)
 
 
-@app.get("/download-tc-file/{session_id}")
-def download_tc_file(session_id: str):
-    path = tc_driver.output_dir / f"analysis_{session_id}.tex"
+@app.get("/download-file/{session_id}/{file_type}")
+async def download_tc_file(session_id: str, file_type: str):
+    path = tc_driver.output_dir / f"{session_id}.{file_type}"
     headers = {'Access-Control-Expose-Headers': 'Content-Disposition'}
-    return FileResponse(path, filename="analysis.tex", headers=headers)
+    return FileResponse(path, filename=f"{'analysis' if file_type == "tex" else 'board_set'}.{file_type}", headers=headers)
 
 
 @app.on_event("startup")

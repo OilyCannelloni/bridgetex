@@ -48,7 +48,13 @@ class BoardData:
 class CodeDTO(BaseModel):
     code: str
 
+
+class FileTypes(BaseModel):
+    tex: bool
+    pbn: bool
+
 class DownloadTcDTO(BaseModel):
     url: str
     boards: str
+    file_types: FileTypes
 

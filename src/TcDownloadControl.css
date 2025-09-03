@@ -61,3 +61,8 @@
 .text-div {
   text-align: left;
 }
+
+.text-box-sm {
+  margin-left: 8px;
+  margin-right: 6px;
+}

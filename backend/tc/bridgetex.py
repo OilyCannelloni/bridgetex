@@ -85,3 +85,6 @@ def build_analysis_template(boards, target_file, verbose=False):
             print(footer)
         file.write(footer)
 
+def build_pbn(boards, target_file, verbose=False):
+    with open(target_file, "w") as file:
+        file.write("dupa")

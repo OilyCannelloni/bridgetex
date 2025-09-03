@@ -3,9 +3,20 @@ import { useEffect, useState } from 'react';
 import './TcDownloadControl.css'
 import { API_URL } from './config';
 
+interface FileTypes {
+    tex: boolean;
+    pbn: boolean;
+}
+
 interface DownloadTcDTO {
     url: string;
     boards: string;
+    file_types: FileTypes;
+}
+
+interface TcFileReadyDTO {
+    session_id: string;
+    file_type: string;
 }
 
 interface SessionIdDTO {
@@ -28,21 +39,30 @@ export default function TcDownloadControl() {
 
     useEffect(() => {
         setWaiting(true)
-        console.log("true")
     }, [clicks])
 
     useEffect(() => {
         setWaiting(false)
-        console.log("false")
     }, [nEvents])
 
-    var eventSource: EventSource;
 
+    const [fileTypes, setFileTypes] = useState({tex: true, pbn: false});
+
+    const handleChange = (e) => {
+        const target = e.target;
+        const value = target.type === 'checkbox' ? target.checked : target.value;
+        const name = target.name;
+        setFileTypes(values => ({...values, [name]: value}))
+    }
+
+
+    var eventSource: EventSource;
     function submit() {
         setClicks(clicks + 1)
         const data: DownloadTcDTO = {
             url: (document.getElementById("url-input") as HTMLInputElement)?.value || "",
             boards: (document.getElementById("boards-input") as HTMLInputElement)?.value || "",
+            file_types: fileTypes
         };
 
         if (data.url == "") {
@@ -71,22 +91,24 @@ export default function TcDownloadControl() {
             });
 
             eventSource.addEventListener("tcFileReady", (event) => {
+                let data = JSON.parse(event.data) as TcFileReadyDTO
+                console.log(data.file_type)
                 const link = document.createElement("a");
-                link.href = `${API_URL}/download-tc-file/${session_id}`;
-                link.download = "analysis.tex";
+                link.href = `${API_URL}/download-file/${session_id}/${data.file_type}`;
+                link.download = data.file_type == "tex" ? "analysis.tex" : "board_set.pbn";
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
 
                 setLastEvent("Plik wygenerowany pomyślnie.");
                 setNEvents(nEvents + 1)
-                eventSource.close();
             });
 
 
             eventSource.addEventListener("download_error", (event) => {
                 setLastEvent(`Błąd: ${JSON.parse(event.data).message}`)
                 setNEvents(nEvents + 1)
+                eventSource.close();
             });
 
             eventSource.addEventListener("end", () => {
@@ -98,7 +120,7 @@ export default function TcDownloadControl() {
     return <div className="main">
         <div className="element-box">
             <div className="box-title">
-                Wklej poniżej link to turnieju, np. <br /> https://mzbs.pl/files/2021/wyniki/zs/250820/  
+                <b>Wklej poniżej link to turnieju, np.</b> https://mzbs.pl/files/2021/wyniki/zs/250820/  
             </div>
             <div className="box-input-wrapper">
                 <input type='text' className="box-input" id="url-input">
@@ -112,6 +134,13 @@ export default function TcDownloadControl() {
                 <div className="box-input-wrapper">
                     <input type='text' className="box-input" id="boards-input" placeholder="Wszystkie">
                     </input>
+                </div>
+                <div>
+                    <span className='text-box-sm'>Typ:</span> 
+                    <span className='text-box-sm'><b>.tex</b></span>
+                    <input type='checkbox' name="tex" defaultChecked onChange={handleChange}></input>  
+                    <span className='text-box-sm'><b>.pbn</b></span>
+                    <input type='checkbox' name="pbn" onChange={handleChange}></input>
                 </div>
             </div>
         </div>

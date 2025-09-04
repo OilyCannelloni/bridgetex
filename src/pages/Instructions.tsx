@@ -1,3 +1,4 @@
+
 export default function Instructions() {
   return <div>
             <h2 className="text-2xl font-bold mb-4 mt-6">GPPP</h2>
@@ -7,7 +8,7 @@ export default function Instructions() {
             </div>
 
             <h2 className="text-2xl font-bold mb-4 mt-10">Turnieje etapowe</h2>
-            <img width="80%" src='/src/assets/turniej-wieloczesciowy.PNG' className="mx-auto m-6"></img>
+            <img width="80%" src='/turniej-wieloczesciowy.png' className="mx-auto m-6"></img>
             <div className='text-left'>
             <p>
                 Jeśli turniej ma <b>strukturę etapową</b> (obrazek), niemożliwe jest pobranie rozdań ze wszystkich etapów na raz.
@@ -21,8 +22,8 @@ export default function Instructions() {
 
             <h2 className="text-2xl font-bold mb-4 mt-10">3 liga MP</h2>
             
-            <img width="80%" src='/src/assets/liga-1.PNG'  className="mx-auto m-6"></img>
-            <img width="80%" src='/src/assets/liga-2.PNG'  className="mx-auto m-6"></img>
+            <img width="80%" src='/liga-1.png'  className="mx-auto m-6"></img>
+            <img width="80%" src='/liga-2.png'  className="mx-auto m-6"></img>
 
             <div className='text-left'>
             <p>

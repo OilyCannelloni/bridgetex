@@ -3,6 +3,7 @@ import Instructions from "./pages/Instructions";
 import FromPbn from "./pages/FromPbn";
 import TcDownloadControl from "./pages/TcDownloadControl";
 import Footer from "./common/Footer";
+import LatexEnv from "./pages/LatexEnv";
 
 export default function App() {
   return (
@@ -12,7 +13,7 @@ export default function App() {
         <nav className="bg-gray-800 text-white p-4 flex justify-between items-center w-full">
           {/* Left side: Logo */}
           <Link to="/" className="flex items-center"> 
-            <img src="/src/assets/2diams.png" alt="Logo" className="h-7 mr-2" />
+            <img src="/2diams.png" alt="Logo" className="h-7 mr-2" />
             <span className="font-bold text-lg">Multi2Diamonds</span>
           </Link>
 
@@ -21,6 +22,7 @@ export default function App() {
             <Link to="/" className="hover:text-amber-400">TeX/PBN z linku TC</Link>
             <Link to="/pbn" className="hover:text-amber-400">TeX z PBN</Link>
             <Link to="/instructions" className="hover:text-amber-400">Instrukcja</Link>
+            <Link to="/latex" className="hover:text-amber-400">Środowisko TeX</Link>
           </div>
         </nav>
       </div>
@@ -30,6 +32,7 @@ export default function App() {
           <Route path="/" element={<TcDownloadControl />} />
           <Route path="/pbn" element={<FromPbn />} />
           <Route path="/instructions" element={<Instructions />} />
+          <Route path="/latex" element={<LatexEnv />} />
         </Routes>
       </main>
         

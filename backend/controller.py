@@ -1,17 +1,17 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, UploadFile, File
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_utils.tasks import repeat_every
-from pydantic import BaseModel
 
 from .tc.tc_downloader import TCResultsDriver
 from .lua.lua_compiler import LuaDriver
 from .system.tempfile_service import TempFileService
 from .tc.models import CodeDTO, DownloadTcDTO
-
+from .tc.pbn_parser import PbnParser
 
 lua_driver = LuaDriver()
 tc_driver = TCResultsDriver()
+pbn_parser = PbnParser()
 
 """
 Scheduler for repeated tasks
@@ -33,12 +33,12 @@ app.add_middleware(
 Endpoints
 """
 
-@app.post("/compile-lualatex")
-def compile_lualatex(codeDTO: CodeDTO):
-    filename = lua_driver.compile(codeDTO.code)
+# @app.post("/compile-lualatex")
+# def compile_lualatex(codeDTO: CodeDTO):
+#     filename = lua_driver.compile(codeDTO.code)
 
-    headers = {'Access-Control-Expose-Headers': 'Content-Disposition'}
-    return FileResponse(filename, filename="result.pdf", headers=headers)
+#     headers = {'Access-Control-Expose-Headers': 'Content-Disposition'}
+#     return FileResponse(filename, filename="result.pdf", headers=headers)
 
 
 @app.post("/download-tc-init")
@@ -61,6 +61,14 @@ async def download_tc_file(session_id: str, file_type: str):
     path = tc_driver.output_dir / f"{session_id}.{file_type}"
     headers = {'Access-Control-Expose-Headers': 'Content-Disposition'}
     return FileResponse(path, filename=f"{'analysis' if file_type == "tex" else 'board_set'}.{file_type}", headers=headers)
+
+
+@app.post("/pbn-to-tex")
+async def pbn_to_tex(pbnFile: UploadFile = File(...)):
+    contents = (await pbnFile.read()).decode("utf-8")
+    path = pbn_parser.pbn_to_analysis_file(contents)
+    headers = {'Access-Control-Expose-Headers': 'Content-Disposition'}
+    return FileResponse(path, filename=f"converted_pbn.tex", headers=headers)
 
 
 @app.on_event("startup")

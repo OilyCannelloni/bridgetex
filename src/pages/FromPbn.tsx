@@ -15,7 +15,20 @@ export default function FromPbn() {
             return
         const formData = new FormData()
         formData.append("pbnFile", file, file.name)
-        axios.post(`${API_URL}/pbn-to-tex`, formData)
+        axios.post(`${API_URL}/pbn-to-tex`, formData, {
+            headers: {
+                "Content-Type": "multipart/form-data",
+            },
+        }).then(resp => {
+            const url = window.URL.createObjectURL(new Blob([resp.data]));
+            const link = document.createElement("a");
+            link.href = url;
+            link.setAttribute("download", "converted_pbn.tex");
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+        })
     }   
 
 

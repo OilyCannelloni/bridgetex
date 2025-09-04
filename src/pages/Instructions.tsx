@@ -2,13 +2,13 @@ export default function Instructions() {
   return <div>
             <h2 className="text-2xl font-bold mb-4 mt-6">GPPP</h2>
 
-            <div className='text-div'>Grane są rozdania o numerach pudełek <b>1-30</b> i <b>1-20</b>. Jeśli chcemy wygenerować plik z 5 ostatnimi rozdaniami
+            <div className='text-left'>Grane są rozdania o numerach pudełek <b>1-30</b> i <b>1-20</b>. Jeśli chcemy wygenerować plik z 5 ostatnimi rozdaniami
                 przed przerwą i 5 pierwszymi po przerwie, należy podać numery 26-35, czyli <b>numery sekwencyjne</b>.
             </div>
 
-            <h2 className="text-2xl font-bold mb-4 mt-6">Turnieje etapowe</h2>
+            <h2 className="text-2xl font-bold mb-4 mt-10">Turnieje etapowe</h2>
             <img width="80%" src='/src/assets/turniej-wieloczesciowy.PNG' className="mx-auto m-6"></img>
-            <div className='text-div'>
+            <div className='text-left'>
             <p>
                 Jeśli turniej ma <b>strukturę etapową</b> (obrazek), niemożliwe jest pobranie rozdań ze wszystkich etapów na raz.
                 Należy <b>wejść w etap</b> (np. "półfinały") i dopiero teraz skopiować link. Zwróć uwagę na "/X/" na końcu kopiowanego linku
@@ -19,12 +19,12 @@ export default function Instructions() {
             </p>
             </div>
 
-            <h2 className="text-2xl font-bold mb-4 mt-6">3 liga MP</h2>
+            <h2 className="text-2xl font-bold mb-4 mt-10">3 liga MP</h2>
             
             <img width="80%" src='/src/assets/liga-1.PNG'  className="mx-auto m-6"></img>
             <img width="80%" src='/src/assets/liga-2.PNG'  className="mx-auto m-6"></img>
 
-            <div className='text-div'>
+            <div className='text-left'>
             <p>
                 To też <b>jeden duży turniej etapowy</b>. Niepodanie numerów rozdań skończyłoby się pobraniem całego etapu, czyli np. 360 rozdań.
             </p>
@@ -34,11 +34,13 @@ export default function Instructions() {
             </p>
             </div>
             
-            <h2 className="text-2xl font-bold mb-4 mt-6">
+            <h2 className="text-2xl font-bold mb-4 mt-10">
                 Ligi centralne
             </h2>
-            <div className='text-div'>
-                Niestety, program jeszcze nie obsługuje lig centralnych, gdyż nie są one liczone w TC.
+            <div className='text-left'>
+                <p>Niestety, program jeszcze nie obsługuje lig centralnych, gdyż nie są one liczone w TC.</p>
+                <p>Trzeba poprosić sędziego o plik PBN z rozdaniami, a następnie użyć zakładki 'Analiza z PBN'.</p>
             </div>
+            <br/><br/><br/><br/><br/>
         </div>
 }

@@ -119,7 +119,6 @@ def hand_to_pbn(board: BoardData):
 def build_pbn(boards, target_file, verbose=False):
     ss = ""
     for board in boards:
-        print(board.north)
         ss += hand_to_pbn(board)
 
     with open(target_file, "w") as file:

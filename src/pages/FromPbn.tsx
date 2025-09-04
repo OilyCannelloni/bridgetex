@@ -5,6 +5,7 @@ import axios from "axios"
 
 export default function FromPbn() {
     const [file, setFile] = useState<File | null>(null)
+    const [status, setStatus] = useState<string>("")
 
     const onFileChange = (event) => {
         setFile(event.target.files[0])
@@ -28,13 +29,25 @@ export default function FromPbn() {
             link.click();
             link.remove();
             window.URL.revokeObjectURL(url);
-        })
+        }).catch(error => {
+            if (error.response) {
+                // server responded with non-2xx
+                if (error.response.status === 422) {
+                    setStatus("Nieprawidłowy format pliku PBN.");
+                } else {
+                    setStatus(`Błąd: ${error.response.status}: ${error.response.statusText}`);
+                }
+            } else {
+                // network error, timeout, etc
+                setStatus("Błąd połączenia.");
+            }
+        });
     }   
 
 
     return <div className="m-10 p-4 rounded bg-stone-500">
             <div className="m-4 p-4 rounded bg-stone-700">
-                <b>Załaduj plik .pbn, aby wygenerować templatkę LaTeX!</b> 
+                <b>Załaduj plik .pbn, aby wygenerować templatkę LaTeX.</b> 
             </div>
             <div className="m-4 p-4 bg-stone-400 border-4 border-stone-800 rounded">
                 <label htmlFor="file-input" >
@@ -46,5 +59,9 @@ export default function FromPbn() {
             <div className="m-4">
                 <button className="bg-green-600 hover:bg-green-500" onClick={onFileUpload}>Wyślij</button>
             </div>
+
+            <span> 
+                {status}
+            </span>
         </div>
 }

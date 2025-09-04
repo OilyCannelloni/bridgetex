@@ -2,12 +2,13 @@ import { Routes, Route, Link } from "react-router-dom";
 import Instructions from "./pages/Instructions";
 import FromPbn from "./pages/FromPbn";
 import TcDownloadControl from "./pages/TcDownloadControl";
+import Footer from "./common/Footer";
 
 export default function App() {
   return (
-    <div className="flex flex-col items-center max-w-4xl mx-auto px-6">
+    <div className="flex flex-col min-h-screen items-center max-w-4xl mx-auto px-6">
       {/* Navbar */}
-      <div className="px-6 w-full sticky top-0 z-50">
+      <div className="w-full sticky top-0 z-50">
         <nav className="bg-gray-800 text-white p-4 flex justify-between items-center w-full">
           {/* Left side: Logo */}
           <Link to="/" className="flex items-center"> 
@@ -17,22 +18,23 @@ export default function App() {
 
           {/* Right side: Links */}
           <div className="flex gap-8 items-center text-lg ml-10">
-            <Link to="/" className="hover:text-amber-400">Analiza/PBN z TC</Link>
-            <Link to="/pbn" className="hover:text-amber-400">Analiza z PBN</Link>
+            <Link to="/" className="hover:text-amber-400">TeX/PBN z linku TC</Link>
+            <Link to="/pbn" className="hover:text-amber-400">TeX z PBN</Link>
             <Link to="/instructions" className="hover:text-amber-400">Instrukcja</Link>
           </div>
         </nav>
       </div>
-      
 
-      {/* Page content */}
-      <div className="p-6 w-full">
+      <main className="flex-1 max-w-4xl mx-auto w-full p-6">
         <Routes>
           <Route path="/" element={<TcDownloadControl />} />
           <Route path="/pbn" element={<FromPbn />} />
           <Route path="/instructions" element={<Instructions />} />
         </Routes>
-      </div>
+      </main>
+        
+      {/* Footer always sits at bottom */}
+      <Footer />
     </div>
   );
 }

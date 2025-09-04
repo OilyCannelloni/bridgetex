@@ -59,6 +59,12 @@ class BoardData:
         self.east = hands[1]
         self.south = hands[2]
         self.west = hands[3]
+
+    def iter_hands(self):
+        yield self.north
+        yield self.east
+        yield self.south
+        yield self.west
     
 
 class CodeDTO(BaseModel):
@@ -73,9 +79,3 @@ class DownloadTcDTO(BaseModel):
     url: str
     boards: str
     file_types: FileTypes
-
-
-if __name__ == "__main__":
-    bd = BoardData()
-    bd.apply_pbn("N:Q83.K7532.K83.75 T.AQ94.9752.AJ96 9762.8.QJ64.QT43 AKJ54.JT6.AT.K82")
-    print(str(bd))

@@ -13,7 +13,7 @@ from pathlib import Path
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
-from selenium.common.exceptions import TimeoutException, JavascriptException
+from selenium.common.exceptions import TimeoutException, JavascriptException, NoSuchElementException
 from abc import ABC, abstractmethod
 
 from .models import *
@@ -47,7 +47,7 @@ class TcFileReadyEvent(SSEEvent, ABC):
 class ErrorEvent(SSEEvent, ABC):
     message: str   
 
-    def to_sse(self):
+    def to_sse(self) -> str:
         return f"event: download_error\ndata: {self.model_dump_json()}\n\n"
 
 
@@ -100,9 +100,11 @@ class TCResultsDownloader(webdriver.Chrome):
         self.board_numbers = self.execute_script("return settings.BoardsNumbers")
 
     def prepare_url(self, url: str):
-        if '#' not in url:
-            return url
-        return url[:url.index('#')]
+        if '#' in url:
+            url = url[:url.index('#')]
+        if not url.endswith("/") or not url.endswith(".html"):
+            url += "/"
+        return url
 
     def set_active_board(self, board_number):
         """
@@ -151,9 +153,8 @@ class TCResultsDownloader(webdriver.Chrome):
 
             return Hand(spades, hearts, diamonds, clubs)
 
-        except TimeoutException:
-            print(f"Error loading element: {span_name}")
-            return Hand("", "", "", "")
+        except (TimeoutException, NoSuchElementException):
+            raise TimeoutException()
 
     def extract_cards(self, html_content, suit_img, suit_length):
         """
@@ -260,14 +261,14 @@ class TCResultsDriver:
 
             with TCResultsDownloader(session.url) as downloader:
                 for e in self._download_boards(session_id, downloader, boards):
-                    yield e.to_sse().encode('utf-8')
+                    yield e.to_sse()
 
         except self.DriverError as err:
-            yield ErrorEvent(message=err.message)
-            yield CloseEvent()
+            yield ErrorEvent(message=err.message).to_sse()
+            yield CloseEvent().to_sse()
         except (JavascriptException, TimeoutException):
-            yield ErrorEvent(message="Nieprawidłowy link.")
-            yield CloseEvent()
+            yield ErrorEvent(message="Nieprawidłowy link.").to_sse()
+            yield CloseEvent().to_sse()
         finally:
             self._sessions.pop(session_id, None)
             try:
@@ -291,7 +292,8 @@ class TCResultsDriver:
                     raise self.DriverError("Turniej ma więcej niż 50 rozdań. Jeśli na pewno chcesz pobrać je wszystkie, podaj ich dokładne numery.")
             
             if set(boards).isdisjoint(set(downloader.board_numbers)):
-                raise self.DriverError("Żaden z podanych numerów rozdań nie istnieje w tym turnieju.")
+                raise self.DriverError("Żadne z rozdań o podanych numerach nie istnieje w tym turnieju. \n"
+                "W przypadku turnieju wieloetapowego wklej link razem z numerem etapu.")
 
             for i, board in enumerate(boards):
                 if board not in downloader.board_numbers:

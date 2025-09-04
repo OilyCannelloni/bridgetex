@@ -1,6 +1,5 @@
 
 import { useEffect, useState } from 'react';
-import './TcDownloadControl.css'
 import { API_URL } from '../config';
 import ProgressBar from '../common/ProgressBar';
 
@@ -130,38 +129,38 @@ export default function TcDownloadControl() {
     }
 
     return <div className="main">
-        <div className="element-box">
-            <div className="box-title">
-                <b>Wklej poniżej link to turnieju, np.</b> https://mzbs.pl/files/2021/wyniki/zs/250820/  
-            </div>
-            <div className="box-input-wrapper">
-                <input type='text' className="box-input" id="url-input">
-                </input>
+        <div className="m-10 p-4 bg-stone-500 rounded">
+            <div className="m-4 p-4 bg-stone-700 rounded">
+                <b>Wklej poniżej link to turnieju</b>, np. https://mzbs.pl/files/2021/wyniki/zs/250820/  
             </div>
 
-            <div className="box-input-wrapper-blank">
+            <div className='mx-4'>
+                <input type='text' className="p-4 w-full bg-stone-400 border-4 border-stone-800 rounded" id="url-input"></input>
+            </div>
+
+            <div className="m-4 mt-8 p-4 bg-stone-700 rounded">
+                <b>Numery rozdań</b>, np. 3, 7, 16-21 (opcjonalnie): 
+            </div>
+            
+            <div className="mx-4">
+                <input type='text' className="mb-4 p-4 w-full bg-stone-400 border-4 border-stone-800 rounded" id="boards-input" placeholder="Wszystkie">
+                </input>
                 <div>
-                    Numery rozdań, np. 3, 7, 16-21 (opcjonalnie): 
-                </div>
-                <div className="box-input-wrapper">
-                    <input type='text' className="box-input" id="boards-input" placeholder="Wszystkie">
-                    </input>
-                </div>
-                <div>
-                    <span className='text-box-sm'>Typ:</span> 
-                    <span className='text-box-sm'><b>.tex</b></span>
+                    <span className='mr-2'>Typ:</span> 
+                    <span className='ml-2 mr-1'><b>.tex</b></span>
                     <input type='checkbox' name="tex" defaultChecked onChange={handleChange}></input>  
-                    <span className='text-box-sm'><b>.pbn</b></span>
+                    <span className='ml-4 mr-1'><b>.pbn</b></span>
                     <input type='checkbox' name="pbn" onChange={handleChange}></input>
                 </div>
             </div>
-        </div>
-        
-        <div className="element-box">
-            <div>
-                <button className="submit-button" onClick={submit}>Wyślij</button>
+
+            <div className='mx-4'>
+                <div className='my-4'>
+                    <button className="bg-green-600 hover:bg-green-500" onClick={submit}>Wyślij</button>
+                </div>
             </div>
-            <div>
+
+            <div className='mx-4'>
                 <span> 
                     {(() => {
                         if (!lastEvent.show) return ""
@@ -171,7 +170,7 @@ export default function TcDownloadControl() {
                     })()}
                 </span>
             </div>
-            <div>
+            <div className='px-10'>
                 <ProgressBar value={(() => {
                     if (waiting == true)
                         return null;
@@ -183,7 +182,6 @@ export default function TcDownloadControl() {
                 })()} />
             </div>
         </div>
-        <br/><br/>
     </div>
 }
 

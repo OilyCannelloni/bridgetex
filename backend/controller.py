@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_utils.tasks import repeat_every
@@ -66,9 +66,12 @@ async def download_tc_file(session_id: str, file_type: str):
 @app.post("/pbn-to-tex")
 async def pbn_to_tex(pbnFile: UploadFile = File(...)):
     contents = (await pbnFile.read()).decode("utf-8")
-    path = pbn_parser.pbn_to_analysis_file(contents)
-    headers = {'Access-Control-Expose-Headers': 'Content-Disposition'}
-    return FileResponse(path, filename=f"converted_pbn.tex", headers=headers)
+    try:
+        path = pbn_parser.pbn_to_analysis_file(contents)
+        headers = {'Access-Control-Expose-Headers': 'Content-Disposition'}
+        return FileResponse(path, filename=f"converted_pbn.tex", headers=headers)
+    except ValueError:
+        raise HTTPException(status_code=422, detail="Nieprawidłowy plik PBN.")
 
 
 @app.on_event("startup")

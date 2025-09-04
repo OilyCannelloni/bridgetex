@@ -135,7 +135,7 @@ export default function TcDownloadControl() {
             </div>
 
             <div className='mx-4'>
-                <input type='text' className="p-4 w-full bg-stone-400 border-4 border-stone-800 rounded" id="url-input"></input>
+                <input type='text' className="p-4 w-full bg-stone-400 border-4 border-stone-700 rounded" id="url-input"></input>
             </div>
 
             <div className="m-4 mt-8 p-4 bg-stone-700 rounded">
@@ -143,7 +143,7 @@ export default function TcDownloadControl() {
             </div>
             
             <div className="mx-4">
-                <input type='text' className="mb-4 p-4 w-full bg-stone-400 border-4 border-stone-800 rounded" id="boards-input" placeholder="Wszystkie">
+                <input type='text' className="mb-4 p-4 w-full bg-stone-400 border-4 border-stone-700 rounded" id="boards-input" placeholder="Wszystkie">
                 </input>
                 <div>
                     <span className='mr-2'>Typ:</span> 

@@ -1,7 +1,8 @@
 
 import { useEffect, useState } from 'react';
 import './TcDownloadControl.css'
-import { API_URL } from './config';
+import { API_URL } from '../config';
+import ProgressBar from '../common/ProgressBar';
 
 interface FileTypes {
     tex: boolean;
@@ -30,20 +31,25 @@ interface BoardLoadedEvent {
     board_content: string;
 }
 
+interface SiteEvent {
+    board_loaded_event: BoardLoadedEvent | null;
+    name: string;
+    show: boolean;
+}
+
 
 export default function TcDownloadControl() {
-    const [lastEvent, setLastEvent] = useState<BoardLoadedEvent | string>("")
+    const [lastEvent, setLastEvent] = useState<SiteEvent>({board_loaded_event: null, name: "", show: false})
     const [waiting, setWaiting] = useState(false)
-    const [clicks, setClicks] = useState(0)
     const [nEvents, setNEvents] = useState(0)
 
-    useEffect(() => {
-        setWaiting(true)
-    }, [clicks])
 
     useEffect(() => {
-        setWaiting(false)
-    }, [nEvents])
+        if (lastEvent?.name == "click")
+            setWaiting(true)
+        else 
+            setWaiting(false)
+    }, [lastEvent])
 
 
     const [fileTypes, setFileTypes] = useState({tex: true, pbn: false});
@@ -58,7 +64,7 @@ export default function TcDownloadControl() {
 
     var eventSource: EventSource;
     function submit() {
-        setClicks(clicks + 1)
+        setLastEvent({...lastEvent, name: "click", show: false})
         const data: DownloadTcDTO = {
             url: (document.getElementById("url-input") as HTMLInputElement)?.value || "",
             boards: (document.getElementById("boards-input") as HTMLInputElement)?.value || "",
@@ -66,7 +72,13 @@ export default function TcDownloadControl() {
         };
 
         if (data.url == "") {
-            setLastEvent("Uzupełnij link do turnieju.")
+            setLastEvent({board_loaded_event: null, name: "Uzupełnij link do turnieju.", show: true})
+            setWaiting(false)
+            return
+        }
+
+        if (data.file_types.pbn == false && data.file_types.tex == false) {
+            setLastEvent({board_loaded_event: null, name: "Wybierz typ pliku.", show: true})
             setWaiting(false)
             return
         }
@@ -86,7 +98,7 @@ export default function TcDownloadControl() {
 
             eventSource = new EventSource(`${API_URL}/download-tc-sse/${session_id}`);
             eventSource.addEventListener("boardLoaded", (event) => {
-                setLastEvent(JSON.parse(event.data));
+                setLastEvent({board_loaded_event: JSON.parse(event.data), name: "", show: true});
                 setNEvents(nEvents + 1)
             });
 
@@ -100,13 +112,13 @@ export default function TcDownloadControl() {
                 link.click();
                 document.body.removeChild(link);
 
-                setLastEvent("Plik wygenerowany pomyślnie.");
+                setLastEvent({board_loaded_event: null, name: "Plik wygenerowany pomyślnie.", show: true});
                 setNEvents(nEvents + 1)
             });
 
 
             eventSource.addEventListener("download_error", (event) => {
-                setLastEvent(`Błąd: ${JSON.parse(event.data).message}`)
+                setLastEvent({board_loaded_event: null , name: `Błąd: ${JSON.parse(event.data).message}`, show: true})
                 setNEvents(nEvents + 1)
                 eventSource.close();
             });
@@ -152,67 +164,26 @@ export default function TcDownloadControl() {
             <div>
                 <span> 
                     {(() => {
-                        return typeof(lastEvent) == 'string' 
-                                ? lastEvent 
-                                : `Przetwarzanie rozdania ${lastEvent.sequence_number} z ${lastEvent.total_boards}`
+                        if (!lastEvent.show) return ""
+                        return lastEvent.board_loaded_event == null
+                                ? lastEvent.name
+                                : `Przetwarzanie rozdania ${lastEvent.board_loaded_event.sequence_number} z ${lastEvent.board_loaded_event.total_boards}`
                     })()}
                 </span>
             </div>
             <div>
-                <progress value={(() => {
+                <ProgressBar value={(() => {
                     if (waiting == true)
                         return null;
-
-                    if (typeof(lastEvent) == 'string') {
-                        return lastEvent
+                    if (lastEvent.board_loaded_event == null) {
+                        return 0
                     } else { 
-                        return lastEvent.sequence_number / lastEvent.total_boards
+                        return lastEvent.board_loaded_event.sequence_number / lastEvent.board_loaded_event.total_boards * 100
                     }
                 })()} />
             </div>
         </div>
         <br/><br/>
-
-        <h2>GPPP</h2>
-        <div className='text-div'>Grane są rozdania o numerach pudełek <b>1-30</b> i <b>1-20</b>. Jeśli chcemy wygenerować plik z 5 ostatnimi rozdaniami
-            przed przerwą i 5 pierwszymi po przerwie, należy podać numery 26-35, czyli <b>numery sekwencyjne</b>.
-        </div>
-
-        <h2>Turnieje etapowe</h2>
-        <img width="80%" src='/src/assets/turniej-wieloczesciowy.PNG'></img>
-        <div className='text-div'>
-        <p>
-            Jeśli turniej ma <b>strukturę etapową</b> (obrazek), niemożliwe jest pobranie rozdań ze wszystkich etapów na raz.
-            Należy <b>wejść w etap</b> (np. "półfinały") i dopiero teraz skopiować link. Zwróć uwagę na "/X/" na końcu kopiowanego linku
-            (strzałka) - to numer etapu.
-        </p>
-        <p>
-            Numery rozdań są sekewncyjne <b>od początku całego turnieju</b>. Oznacza to, że w półfinałach numery to np. 28-54, a w finale 55-90.
-        </p>
-        </div>
-
-        <h2>3 liga MP</h2>
-        
-        <img width="80%" src='/src/assets/liga-1.PNG'></img>
-        <img width="80%" src='/src/assets/liga-2.PNG'></img>
-
-        <div className='text-div'>
-        <p>
-            To też <b>jeden duży turniej etapowy</b>. Niepodanie numerów rozdań skończyłoby się pobraniem całego etapu, czyli np. 360 rozdań.
-        </p>
-        <p>
-            Aby pobrać tylko jeden mecz, wchodzimy w pierwsze rozdanie (obrazek 1) i notujemy jego <b>numer sekwencyjny</b> (obrazek 2).
-            Następnie podajemy numery rozdań począwszy od tego numeru. W tym przypadku, dla meczu 24-rozdaniowego: <b>301-324</b>
-        </p>
-        </div>
-        
-        <h2>
-            Ligi centralne
-        </h2>
-        <div className='text-div'>
-            Niestety, program jeszcze nie obsługuje lig centralnych, gdyż nie są one liczone w TC.
-        </div>
-
     </div>
 }
 

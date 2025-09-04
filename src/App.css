@@ -6,20 +6,4 @@
   text-align: center;
 }
 
-.control-buttons-wrapper {
-  margin: 20px; 
-  padding: 10px;
-  background-color: #696b64;
-  border-radius: 5px;
-}
-
-.code-pdf-container {
-  margin: 20px;
-  padding: 10px;
-  border-radius: 5px;
-  background-color: #696b64;
-  height: 420px;
-  width: 1200px;
-}
-
 
